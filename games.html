@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Far North &mdash; Games</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0a0e1a;
+      color: #e8f4f8;
+      min-height: 100vh;
+    }
+
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      background: #060c18;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #1a3a5c;
+    }
+
+    nav a {
+      color: #7aafc8;
+      text-decoration: none;
+      padding: 0.4rem 1.1rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      letter-spacing: 0.04em;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    nav a:hover, nav a.active {
+      background: #1a3a5c;
+      color: #a8d8f0;
+    }
+
+    header {
+      text-align: center;
+      padding: 2.5rem 1rem 1.5rem;
+      background: linear-gradient(180deg, #0a0e1a 0%, #0d1f3c 100%);
+    }
+
+    header h1 {
+      font-size: 2.4rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #a8d8f0;
+      text-shadow: 0 0 20px rgba(100, 200, 255, 0.4);
+    }
+
+    header p {
+      margin-top: 0.5rem;
+      color: #7aafc8;
+      font-size: 1rem;
+    }
+
+    /* HUD */
+    .hud {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 2rem;
+      padding: 1.2rem;
+      font-size: 0.95rem;
+      color: #7aafc8;
+      flex-wrap: wrap;
+    }
+
+    .hud span strong {
+      color: #a8d8f0;
+      font-size: 1.1rem;
+    }
+
+    .hud button {
+      background: transparent;
+      border: 1px solid #2a4a6a;
+      color: #a8d8f0;
+      padding: 0.4rem 1.3rem;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.2s;
+    }
+
+    .hud button:hover { background: #1a3a5c; }
+
+    /* Board */
+    .board-wrap {
+      display: flex;
+      justify-content: center;
+      padding: 0.5rem 1rem 3rem;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+      max-width: 480px;
+      width: 100%;
+    }
+
+    .card {
+      aspect-ratio: 1;
+      perspective: 600px;
+      cursor: pointer;
+    }
+
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.4s;
+      border-radius: 10px;
+    }
+
+    .card.flipped .card-inner,
+    .card.matched .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-front, .card-back {
+      position: absolute;
+      inset: 0;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .card-front {
+      background: #0d1f3c;
+      border: 1px solid #1a3a5c;
+      font-size: 1.8rem;
+      color: #2a4a6a;
+    }
+
+    .card-back {
+      background: #112844;
+      border: 1px solid #4a9abf;
+      transform: rotateY(180deg);
+      font-size: 2.4rem;
+    }
+
+    .card.matched .card-back {
+      background: #0d2e1a;
+      border-color: #3a9a6a;
+    }
+
+    /* Win banner */
+    .win-banner {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 10, 25, 0.88);
+      z-index: 50;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .win-banner.show { display: flex; }
+
+    .win-box {
+      background: #0d1f3c;
+      border: 1px solid #4a9abf;
+      border-radius: 14px;
+      padding: 2.5rem 3rem;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(0, 160, 255, 0.2);
+    }
+
+    .win-box h2 {
+      font-size: 2rem;
+      color: #a8d8f0;
+      margin-bottom: 0.5rem;
+    }
+
+    .win-box p { color: #7aafc8; margin-bottom: 1.5rem; }
+
+    .win-box button {
+      background: #1a3a5c;
+      border: 1px solid #4a9abf;
+      color: #a8d8f0;
+      padding: 0.6rem 2rem;
+      border-radius: 20px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .win-box button:hover { background: #254e7a; }
+
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: #2a4a6a;
+      font-size: 0.8rem;
+      border-top: 1px solid #0d1f3c;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html">Gallery</a>
+  <a href="games.html" class="active">Games</a>
+</nav>
+
+<header>
+  <h1>Arctic Memory</h1>
+  <p>Match all the Far North pairs to win</p>
+</header>
+
+<div class="hud">
+  <span>Moves: <strong id="moves">0</strong></span>
+  <span>Matches: <strong id="matchCount">0</strong> / 8</span>
+  <span>Time: <strong id="timer">0s</strong></span>
+  <button id="restartBtn">&#8635; Restart</button>
+</div>
+
+<div class="board-wrap">
+  <div class="board" id="board"></div>
+</div>
+
+<div class="win-banner" id="winBanner">
+  <div class="win-box">
+    <h2>&#10024; You Won!</h2>
+    <p id="winMsg"></p>
+    <button id="playAgainBtn">Play Again</button>
+  </div>
+</div>
+
+<footer>Far North Gallery &copy; 2026</footer>
+
+<script>
+  const EMOJIS = ['🦊','🐻‍❄️','🦭','🦌','🐋','🌨️','❄️','🌌'];
+
+  let cards = [];
+  let flipped = [];
+  let matched = 0;
+  let moves = 0;
+  let locked = false;
+  let timerInterval = null;
+  let seconds = 0;
+
+  const board = document.getElementById('board');
+  const movesEl = document.getElementById('moves');
+  const matchEl = document.getElementById('matchCount');
+  const timerEl = document.getElementById('timer');
+  const winBanner = document.getElementById('winBanner');
+  const winMsg = document.getElementById('winMsg');
+
+  function shuffle(arr) {
+    return [...arr].sort(() => Math.random() - 0.5);
+  }
+
+  function startTimer() {
+    clearInterval(timerInterval);
+    seconds = 0;
+    timerEl.textContent = '0s';
+    timerInterval = setInterval(() => {
+      seconds++;
+      timerEl.textContent = seconds + 's';
+    }, 1000);
+  }
+
+  function stopTimer() {
+    clearInterval(timerInterval);
+  }
+
+  function buildBoard() {
+    board.innerHTML = '';
+    flipped = [];
+    matched = 0;
+    moves = 0;
+    locked = false;
+    movesEl.textContent = '0';
+    matchEl.textContent = '0';
+    winBanner.classList.remove('show');
+
+    const pairs = shuffle([...EMOJIS, ...EMOJIS]);
+    cards = pairs.map((emoji, i) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.emoji = emoji;
+      card.dataset.index = i;
+      card.innerHTML = `
+        <div class="card-inner">
+          <div class="card-front">&#10052;</div>
+          <div class="card-back">${emoji}</div>
+        </div>`;
+      card.addEventListener('click', () => flipCard(card));
+      board.appendChild(card);
+      return card;
+    });
+
+    startTimer();
+  }
+
+  function flipCard(card) {
+    if (locked) return;
+    if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
+    if (flipped.length === 2) return;
+
+    card.classList.add('flipped');
+    flipped.push(card);
+
+    if (flipped.length === 2) {
+      moves++;
+      movesEl.textContent = moves;
+      locked = true;
+      checkMatch();
+    }
+  }
+
+  function checkMatch() {
+    const [a, b] = flipped;
+    if (a.dataset.emoji === b.dataset.emoji) {
+      a.classList.add('matched');
+      b.classList.add('matched');
+      matched++;
+      matchEl.textContent = matched;
+      flipped = [];
+      locked = false;
+      if (matched === EMOJIS.length) {
+        stopTimer();
+        winMsg.textContent = `Completed in ${moves} moves and ${seconds} seconds!`;
+        setTimeout(() => winBanner.classList.add('show'), 400);
+      }
+    } else {
+      setTimeout(() => {
+        a.classList.remove('flipped');
+        b.classList.remove('flipped');
+        flipped = [];
+        locked = false;
+      }, 900);
+    }
+  }
+
+  document.getElementById('restartBtn').addEventListener('click', buildBoard);
+  document.getElementById('playAgainBtn').addEventListener('click', buildBoard);
+
+  buildBoard();
+</script>
+</body>
+</html>
