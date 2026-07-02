@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Polar Popper &mdash; Far North</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0a0e1a;
+      color: #e8f4f8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    nav {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      background: #060c18;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #1a3a5c;
+    }
+
+    nav a {
+      color: #7aafc8;
+      text-decoration: none;
+      padding: 0.4rem 1.1rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      letter-spacing: 0.04em;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    nav a:hover, nav a.active {
+      background: #1a3a5c;
+      color: #a8d8f0;
+    }
+
+    header {
+      text-align: center;
+      padding: 2.5rem 1rem 1rem;
+      background: linear-gradient(180deg, #0a0e1a 0%, #0d1f3c 100%);
+    }
+
+    header h1 {
+      font-size: 2.4rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #a8d8f0;
+      text-shadow: 0 0 20px rgba(100, 200, 255, 0.4);
+    }
+
+    header p {
+      margin-top: 0.5rem;
+      color: #7aafc8;
+      font-size: 1rem;
+    }
+
+    /* HUD */
+    .hud {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 2rem;
+      padding: 1rem 1rem 0.5rem;
+      font-size: 0.95rem;
+      color: #7aafc8;
+      flex-wrap: wrap;
+    }
+
+    .hud span strong {
+      color: #a8d8f0;
+      font-size: 1.15rem;
+    }
+
+    /* Timer bar */
+    .timer-bar-wrap {
+      display: flex;
+      justify-content: center;
+      padding: 0.6rem 1rem;
+    }
+
+    .timer-bar-track {
+      width: min(480px, 90vw);
+      height: 8px;
+      background: #0d1f3c;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid #1a3a5c;
+    }
+
+    .timer-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3a9abf, #a8d8f0);
+      border-radius: 4px;
+      transition: width 0.25s linear, background 0.5s;
+      width: 100%;
+    }
+
+    .timer-bar-fill.low { background: linear-gradient(90deg, #9a3a3a, #f08080); }
+
+    /* Grid */
+    .grid-wrap {
+      display: flex;
+      justify-content: center;
+      padding: 1rem 1rem 2rem;
+      flex: 1;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      width: min(480px, 92vw);
+      align-content: start;
+    }
+
+    /* Hole */
+    .hole {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 14px;
+      background: #060c18;
+      border: 1px solid #1a3a5c;
+      overflow: hidden;
+      cursor: default;
+    }
+
+    /* Critter that pops up */
+    .critter {
+      position: absolute;
+      bottom: -100%;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(2rem, 7vw, 3rem);
+      border-radius: 14px;
+      transition: bottom 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .critter.good { background: #0d1f3c; }
+    .critter.bad  { background: #2a0d0d; }
+
+    .critter.up { bottom: 0; }
+
+    /* Hit flash */
+    .critter.hit-good { background: #0d3020; }
+    .critter.hit-bad  { background: #3a0a0a; }
+
+    /* Floating score pop */
+    .score-pop {
+      position: absolute;
+      top: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.4rem;
+      font-weight: 700;
+      pointer-events: none;
+      animation: floatUp 0.6s ease-out forwards;
+      z-index: 10;
+    }
+
+    .score-pop.good { color: #6adfa0; }
+    .score-pop.bad  { color: #f07070; }
+
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translateX(-50%) translateY(0); }
+      100% { opacity: 0; transform: translateX(-50%) translateY(-50px); }
+    }
+
+    /* Overlay screens */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 10, 25, 0.88);
+      z-index: 50;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .overlay.show { display: flex; }
+
+    .overlay-box {
+      background: #0d1f3c;
+      border: 1px solid #4a9abf;
+      border-radius: 14px;
+      padding: 2.5rem 3rem;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(0, 160, 255, 0.2);
+      max-width: 360px;
+      width: 90%;
+    }
+
+    .overlay-box h2 {
+      font-size: 2rem;
+      color: #a8d8f0;
+      margin-bottom: 0.5rem;
+    }
+
+    .overlay-box p {
+      color: #7aafc8;
+      margin-bottom: 0.4rem;
+      font-size: 0.95rem;
+    }
+
+    .overlay-box .big-score {
+      font-size: 3rem;
+      color: #a8d8f0;
+      font-weight: 700;
+      margin: 0.6rem 0 1.2rem;
+    }
+
+    .overlay-box .btn-row {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .overlay-box button {
+      background: #1a3a5c;
+      border: 1px solid #4a9abf;
+      color: #a8d8f0;
+      padding: 0.6rem 2rem;
+      border-radius: 20px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .overlay-box button:hover { background: #254e7a; }
+    .overlay-box .back-btn { background: #0d1f3c; border-color: #2a4a6a; }
+    .overlay-box .back-btn:hover { background: #162a44; }
+
+    /* Difficulty selector */
+    .diff-row {
+      display: flex;
+      gap: 0.6rem;
+      justify-content: center;
+      margin-bottom: 1.4rem;
+      flex-wrap: wrap;
+    }
+
+    .diff-btn {
+      background: transparent;
+      border: 1px solid #2a4a6a;
+      color: #7aafc8;
+      padding: 0.35rem 1rem;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .diff-btn.active, .diff-btn:hover {
+      background: #1a3a5c;
+      border-color: #4a9abf;
+      color: #a8d8f0;
+    }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      font-size: 0.8rem;
+      color: #5a8faa;
+      padding: 0 1rem 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .legend span { display: flex; align-items: center; gap: 0.3rem; }
+
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: #2a4a6a;
+      font-size: 0.8rem;
+      border-top: 1px solid #0d1f3c;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html">Gallery</a>
+  <a href="games.html" class="active">Games</a>
+</nav>
+
+<header>
+  <h1>Polar Popper</h1>
+  <p>Click the animals before they hide &mdash; avoid the bombs!</p>
+</header>
+
+<div class="hud">
+  <span>Score: <strong id="scoreEl">0</strong></span>
+  <span>Best: <strong id="bestEl">0</strong></span>
+  <span>Time: <strong id="timeEl">30</strong>s</span>
+</div>
+
+<div class="timer-bar-wrap">
+  <div class="timer-bar-track">
+    <div class="timer-bar-fill" id="timerBar"></div>
+  </div>
+</div>
+
+<div class="legend">
+  <span>🦊 🦭 🐻‍❄️ = +1</span>
+  <span>💣 = &minus;2</span>
+</div>
+
+<div class="grid-wrap">
+  <div class="grid" id="grid"></div>
+</div>
+
+<!-- Start overlay -->
+<div class="overlay show" id="startOverlay">
+  <div class="overlay-box">
+    <h2>Polar Popper</h2>
+    <p>Click arctic animals as they pop up.</p>
+    <p style="margin-bottom:1rem">Avoid the bombs! You have <strong style="color:#a8d8f0">30 seconds</strong>.</p>
+    <div class="diff-row">
+      <button class="diff-btn active" data-diff="easy">Easy</button>
+      <button class="diff-btn" data-diff="medium">Medium</button>
+      <button class="diff-btn" data-diff="hard">Hard</button>
+    </div>
+    <div class="btn-row">
+      <button id="startBtn">&#9658; Play</button>
+      <button class="back-btn" onclick="location.href='games.html'">&#8592; Games</button>
+    </div>
+  </div>
+</div>
+
+<!-- End overlay -->
+<div class="overlay" id="endOverlay">
+  <div class="overlay-box">
+    <h2>&#9731; Time's Up!</h2>
+    <p>Your score</p>
+    <div class="big-score" id="finalScore">0</div>
+    <p id="bestMsg"></p>
+    <div class="btn-row">
+      <button id="replayBtn">&#8635; Play Again</button>
+      <button class="back-btn" onclick="location.href='games.html'">&#8592; Games</button>
+    </div>
+  </div>
+</div>
+
+<footer>Far North Gallery &copy; 2026</footer>
+
+<script>
+  const GOOD = ['🦊','🦭','🐻‍❄️','🦌','❄️','🌨️','🐋'];
+  const BAD  = ['💣'];
+
+  const DIFFICULTY = {
+    easy:   { minVisible: 1200, maxVisible: 2200, interval: 1000, badChance: 0.15 },
+    medium: { minVisible:  800, maxVisible: 1600, interval:  700, badChance: 0.22 },
+    hard:   { minVisible:  500, maxVisible: 1100, interval:  500, badChance: 0.30 },
+  };
+
+  const HOLES = 9;
+  const GAME_TIME = 30;
+
+  let score = 0;
+  let best = Number(localStorage.getItem('polarPopperBest') || 0);
+  let timeLeft = GAME_TIME;
+  let running = false;
+  let spawnInterval = null;
+  let countdown = null;
+  let difficulty = 'easy';
+  let holeTimers = new Array(HOLES).fill(null);
+
+  const scoreEl   = document.getElementById('scoreEl');
+  const bestEl    = document.getElementById('bestEl');
+  const timeEl    = document.getElementById('timeEl');
+  const timerBar  = document.getElementById('timerBar');
+  const grid      = document.getElementById('grid');
+  const startOverlay = document.getElementById('startOverlay');
+  const endOverlay   = document.getElementById('endOverlay');
+  const finalScore   = document.getElementById('finalScore');
+  const bestMsg      = document.getElementById('bestMsg');
+
+  bestEl.textContent = best;
+
+  // Build holes
+  const holes = [];
+  for (let i = 0; i < HOLES; i++) {
+    const hole = document.createElement('div');
+    hole.className = 'hole';
+    hole.dataset.index = i;
+    hole.innerHTML = `<div class="critter good" data-index="${i}"></div>`;
+    grid.appendChild(hole);
+    holes.push(hole);
+  }
+
+  function getCritter(i) {
+    return holes[i].querySelector('.critter');
+  }
+
+  function popUp(index) {
+    if (!running) return;
+    const cfg = DIFFICULTY[difficulty];
+    const isBad = Math.random() < cfg.badChance;
+    const emoji = isBad
+      ? BAD[Math.floor(Math.random() * BAD.length)]
+      : GOOD[Math.floor(Math.random() * GOOD.length)];
+
+    const c = getCritter(index);
+    if (c.classList.contains('up')) return; // already up
+
+    c.textContent = emoji;
+    c.className = 'critter ' + (isBad ? 'bad' : 'good');
+    c.dataset.bad = isBad ? '1' : '0';
+    void c.offsetWidth; // force reflow
+    c.classList.add('up');
+
+    const visibleTime = cfg.minVisible + Math.random() * (cfg.maxVisible - cfg.minVisible);
+    holeTimers[index] = setTimeout(() => hideAt(index), visibleTime);
+  }
+
+  function hideAt(index) {
+    const c = getCritter(index);
+    c.classList.remove('up', 'hit-good', 'hit-bad');
+  }
+
+  function handleClick(e) {
+    if (!running) return;
+    const c = e.currentTarget;
+    if (!c.classList.contains('up')) return;
+    const index = parseInt(c.dataset.index);
+
+    clearTimeout(holeTimers[index]);
+    holeTimers[index] = null;
+
+    const isBad = c.dataset.bad === '1';
+    const delta = isBad ? -2 : 1;
+    score = Math.max(0, score + delta);
+    scoreEl.textContent = score;
+
+    // Flash
+    c.classList.add(isBad ? 'hit-bad' : 'hit-good');
+
+    // Floating number
+    const pop = document.createElement('div');
+    pop.className = 'score-pop ' + (isBad ? 'bad' : 'good');
+    pop.textContent = isBad ? '-2' : '+1';
+    holes[index].appendChild(pop);
+    pop.addEventListener('animationend', () => pop.remove());
+
+    setTimeout(() => hideAt(index), 150);
+  }
+
+  // Attach click to each critter
+  holes.forEach(hole => {
+    hole.querySelector('.critter').addEventListener('click', handleClick);
+  });
+
+  function spawnRandom() {
+    const available = [];
+    for (let i = 0; i < HOLES; i++) {
+      if (!getCritter(i).classList.contains('up')) available.push(i);
+    }
+    if (available.length === 0) return;
+    const pick = available[Math.floor(Math.random() * available.length)];
+    popUp(pick);
+  }
+
+  function startGame() {
+    score = 0;
+    timeLeft = GAME_TIME;
+    running = true;
+    scoreEl.textContent = 0;
+    timeEl.textContent = GAME_TIME;
+    timerBar.style.width = '100%';
+    timerBar.classList.remove('low');
+    startOverlay.classList.remove('show');
+    endOverlay.classList.remove('show');
+
+    // Hide all
+    for (let i = 0; i < HOLES; i++) hideAt(i);
+
+    const cfg = DIFFICULTY[difficulty];
+    clearInterval(spawnInterval);
+    spawnInterval = setInterval(spawnRandom, cfg.interval);
+
+    clearInterval(countdown);
+    countdown = setInterval(() => {
+      timeLeft--;
+      timeEl.textContent = timeLeft;
+      timerBar.style.width = (timeLeft / GAME_TIME * 100) + '%';
+      if (timeLeft <= 10) timerBar.classList.add('low');
+      if (timeLeft <= 0) endGame();
+    }, 1000);
+  }
+
+  function endGame() {
+    running = false;
+    clearInterval(spawnInterval);
+    clearInterval(countdown);
+    for (let i = 0; i < HOLES; i++) {
+      clearTimeout(holeTimers[i]);
+      hideAt(i);
+    }
+
+    finalScore.textContent = score;
+    if (score > best) {
+      best = score;
+      localStorage.setItem('polarPopperBest', best);
+      bestEl.textContent = best;
+      bestMsg.textContent = '🎉 New best score!';
+    } else {
+      bestMsg.textContent = `Best: ${best}`;
+    }
+    endOverlay.classList.add('show');
+  }
+
+  // Difficulty buttons
+  document.querySelectorAll('.diff-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      difficulty = btn.dataset.diff;
+    });
+  });
+
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('replayBtn').addEventListener('click', () => {
+    startOverlay.classList.add('show');
+    endOverlay.classList.remove('show');
+  });
+</script>
+</body>
+</html>
